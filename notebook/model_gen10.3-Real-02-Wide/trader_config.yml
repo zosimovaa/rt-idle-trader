@@ -1,0 +1,16 @@
+core: TradeCoreFutureFeature
+update_period: 60
+observation:
+  n_future_points: 8
+  n_observation_points : 20
+  period: 900
+pairs_list:
+  - BTC_ETH
+  - USDT_BTC
+  - USDT_DOGE
+  - BTC_ATOM
+  - BTC_XRP
+  - TRX_SUN
+
+
+
