@@ -20,6 +20,7 @@ class TraderApp(Thread):
         self.traders = dict()
         self.log = logging.getLogger(__name__)
 
+
     def get_models_hash_list(self):
         """Получение списка директорий с моделями"""
         dir_list = os.listdir(self.models_path)
