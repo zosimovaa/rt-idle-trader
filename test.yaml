@@ -17,7 +17,7 @@ log:
 
   formatters:
     standard:
-      format: '%(asctime)s %(name)52s [%(levelname)8s]: %(message)s'
+      format: '%(asctime)s %(name)20s [%(levelname)8s]: %(message)s'
     telegram:
       format: '%(message)s'
 
@@ -53,14 +53,15 @@ log:
 
     __main__:
       handlers: [console, file, telegram]
-      level: DEBUG
+      level: ERROR
       propagate: False
 
     trader.trader:
-      handlers: [console, file]
-      level: DEBUG
+      handlers: [console, file, telegram]
+      level: ERROR
       propagate: False
 
-
-
-
+    trader.action_logger:
+      handlers: [ console, file ]
+      level: INFO
+      propagate: False

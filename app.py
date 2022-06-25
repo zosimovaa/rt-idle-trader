@@ -13,10 +13,10 @@
  > Провайдер
     >> Задачи: реализует доступ к модели для получения предсказания
     >> Конфиг: путь к папке с моделью
-    >> Реализация: кастом
+    >> Реализация: класс (без BasicApplication)
 
 Сохраняю первоначальный подход к конфигу - путь к папке с моделями.
-название пепки - алиас модели.
+название папки - алиас модели.
 внутри файл конфиг и сама модель
 
 """
@@ -43,6 +43,7 @@ class IdleTraderApp(BasicApplication):
     def __init__(self, config_path):
         super().__init__(config_path=config_path)
         self.traders = dict()
+        logger.critical("{0} v.{1} started".format(self.NAME, self.VERSION))
 
     @staticmethod
     def get_models_hash_list(models_path):
@@ -52,8 +53,10 @@ class IdleTraderApp(BasicApplication):
         for alias in dir_list:
             alias_path = os.path.join(models_path, alias)
             config_path = os.path.join(alias_path, "trader_config.yml")
-            if os.path.isdir(alias_path) and os.path.exists(config_path):
+            model_path = os.path.join(alias_path, "saved_model.pb")
+            if os.path.exists(config_path) and os.path.exists(model_path):
                 models_list.append(alias)
+
         logger.debug("Models list: {0}".format(models_list))
         return models_list
 
@@ -61,11 +64,10 @@ class IdleTraderApp(BasicApplication):
         """Создание трейдеров"""
         current_traders_list = list(self.traders.keys())
         for alias in traders_list:
-            print(alias)
             if alias not in current_traders_list:
                 self.traders[alias] = Trader(alias, models_path, db_conf)
                 self.traders[alias].start()
-                logger.warning("New trader {0} was created".format(alias))
+                logger.warning("New trader created: {}".format(alias))
 
     def clean_up_traders(self, traders_list):
         """Удаление трейдеров"""
@@ -97,7 +99,7 @@ class IdleTraderApp(BasicApplication):
                 time.sleep(runtime_config["models_update_period"])
 
             except Exception as e:
-                logger.error(e)
+                logger.critical(e)
                 logger.error(traceback.format_exc())
 
             finally:
@@ -106,6 +108,7 @@ class IdleTraderApp(BasicApplication):
     def stop(self):
         self.clean_up_traders()
         super().stop()
+
 
 
 if __name__ == "__main__":

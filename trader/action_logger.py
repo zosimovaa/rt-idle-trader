@@ -1,7 +1,7 @@
 import logging
+
 from core import BadAction, TradeAction
 from basic_application import with_exception
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,15 @@ class ActionLogger:
     def __init__(self, provider, trader):
         self.provider = provider
         self.trader = trader
-        logger.debug("Initialized")
 
     @with_exception(ActionLoggerError)
     def process(self, action_result, ticker, alias):
         self.console_log(action_result, ticker, alias)
         self.db_log(action_result, ticker, alias)
 
-    def console_log(self, action_result, ticker, alias):
-        action = ticker.context.get("action")
+    @staticmethod
+    def console_log(action_result, ticker, alias):
+        action = ticker.context.get("action", domain="Action")
         if action == 1:
             profit = ticker.context.get("profit", domain="Trade")
             logger.info("{0:>12} Open [{1:.4f}]".format(alias, profit))
@@ -45,13 +45,11 @@ class ActionLogger:
         if isinstance(action_result, BadAction):
             logger.debug("BadAction instance has been passed")
             params = self._build_bad_action_params(action_result, alias)
-            print(params)
             self._execute(self.BA_QUERY, params)
 
         if isinstance(action_result, TradeAction) and not action_result.is_open:
             logger.debug("TradeAction instance has been passed")
             params = self._build_trade_action_params(action_result, alias)
-            print(params)
             self._execute(self.TA_QUERY, params)
 
     def _execute(self, query, data):
@@ -71,7 +69,8 @@ class ActionLogger:
 
         data.append(str(self.trader.alias))
         data.append("model_ver")
-        data.append(str(self.trader.config.get("observation").get("period")))
+        trader_config = self.trader.config_manager.get_config()
+        data.append(str(trader_config["observation"]["period"]))
         data.append(str(self.trader.alias))
         return [data]
 
@@ -97,31 +96,3 @@ class ActionLogger:
         data.append(str(trader_config["observation"]["period"]))
         data.append(str(self.trader.alias))
         return [data]
-
-
-class BadActionHandler:
-    query = 'insert into bad_actions values'
-
-    def __init__(self, provider):
-        self.provider = provider
-
-    def save(self, action_result, trader):
-        data = self._build_params(action_result, trader)
-        self.provider.cursor.executemany(self.query, data)
-
-    def _build_params(self, action_result, trader):
-        data = list()
-        data.append(str(action_result.id))
-
-        data.append(str(action_result.alias))
-        data.append(int(action_result.ts))
-        data.append(str(action_result.action))
-        data.append(bool(action_result.is_open))
-
-        data.append(str(trader.alias))
-        data.append("model_ver")
-        data.append(str(trader.config.get("observation").get("period")))
-        data.append(str(trader.alias))
-        return [data]
-
-

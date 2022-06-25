@@ -3,8 +3,8 @@ import checksumdir
 import numpy as np
 import tensorflow as tf
 
-from .abstract_model_provider import AbstractModelProvider
-
+from .abstract_model_provider import AbstractModelProvider, ModelProviderError
+from basic_application import with_exception
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ class FileModelProvider(AbstractModelProvider):
         self._check_model()
         logger.warning("Model initialized from {0}".format(self.path))
 
+    @with_exception(ModelProviderError)
     def predict(self, observation):
         self._check_model()
         obs_transformed = self._prepare_observation(observation)
@@ -26,6 +27,7 @@ class FileModelProvider(AbstractModelProvider):
         logger.debug("Action probabilities: {0} | Predicted action: {1}".format(action_probs, action))
         return action
 
+    @with_exception(ModelProviderError)
     def _check_model(self):
         model_hash = checksumdir.dirhash(self.path)
         if model_hash != self.model_hash:
