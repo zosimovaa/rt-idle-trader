@@ -95,3 +95,4 @@ Werkzeug==2.1.2
 wrapt==1.14.1
 zipp==3.8.0
 rt_core @ git+https://bitbucket.org/zosimovaa/rt_core.git
+basic-application @ git+https://bitbucket.org/zosimovaa/basic_application.git
