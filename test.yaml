@@ -3,7 +3,6 @@ runtime:
   models_path: "/Users/alex/Dev_projects/RT/rt_models"
   models_update_period: 15
 
-
 # === Database params ===
 db:
   host: 185.117.118.107
@@ -65,3 +64,88 @@ log:
       handlers: [ console, file ]
       level: INFO
       propagate: False
+
+
+query: "WITH
+  toUInt32(%(period)s) AS p_period,
+  toUInt32(%(steps)s) AS n_steps,
+  toUInt32(%(end)s) AS ts_max,
+  toUInt32(ts_max - p_period * n_steps) AS ts_min,
+  %(pair)s AS p_pair
+
+  select
+  tb_orderbook.ts as ts,
+  tb_orderbook.lowest_ask as lowest_ask,
+  tb_orderbook.highest_bid as highest_bid,
+  tb_orderbook.asks as asks,
+  tb_orderbook.bids as bids,
+
+  tb_trades.buy_vol as buy_vol,
+  tb_trades.sell_vol as sell_vol,
+  tb_trades.buy_num as buy_num,
+  tb_trades.sell_num as sell_num
+
+
+
+  from
+
+
+  (select
+  period_gr + ts_min as ts,
+  toFloat32(any(lowest_ask)) as lowest_ask,
+  toFloat32(any(highest_bid)) as highest_bid,
+  any(asks) as asks,
+  any(bids) as bids
+
+  from
+
+
+  (select
+  ts - ts_max as ts_group,
+  CEIL((`ts`-`ts_min`) / p_period) * p_period AS `period_gr`,
+  lowest_ask,
+  highest_bid,
+  asks,
+  bids
+
+
+  from orderbook
+  where pair=p_pair and ts between ts_min and ts_max
+  order by ts_group desc
+  ) as tb1
+
+  group by period_gr
+  order by period_gr asc
+  ) as tb_orderbook
+
+
+  FULL join
+
+  (SELECT
+
+  toUInt32(period + ts_min) AS ts,
+  toFloat32(SUM(buy_vol)) as buy_vol,
+  toFloat32(SUM(sell_vol)) as sell_vol,
+
+  SUM(buy_num) as buy_num,
+  SUM(sell_num) as sell_num
+
+  FROM
+  (select
+  CEIL((`ts`-`ts_min`) / p_period) * p_period AS `period`,
+  --`type` as `type_gr`,
+  --`rate` as rate_gr,
+  --`amount` as `amount_gr`,
+  --`total` as `total_ts`,
+
+  if(`type`='buy', total, 0) as `buy_vol`,
+  if(`type`='buy', 1, 0) as `buy_num`,
+  if(`type`='sell', total, 0) as `sell_vol`,
+  if(`type`='sell', 1, 0) as `sell_num`
+
+  from trades
+  where ts between ts_min and ts_max and pair = p_pair) AS TB_1
+  GROUP BY period
+  ) as tb_trades on tb_trades.ts = tb_orderbook.ts
+
+  ORDER BY ts ASC"
